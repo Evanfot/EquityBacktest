@@ -14,6 +14,9 @@ Factor backtesting using zipline
 - *src.backtest_analyser* generates charts and statistics that summarise a backtest. Any other backtest analysis should also be performed here
 - The examples folder includes ipynb files that illustrate how each of these are run and the outputs that each generate.
 
+### Results:
+![20240613_0148_returns_tear_sheet](https://github.com/Evanfot/EquityBacktest/assets/42512842/c8e72e46-14b6-448e-afa5-9f240f736156)
+
 ## Installation steps:
 - Create a new virtual environment
 ### In terminal
