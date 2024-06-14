@@ -1,10 +1,8 @@
 paths:
-    output_path: "analysis/test/"
+    output_path: "examples/"
 
-# bundles:
-    # bundle_name: "ZAEQ"
-    # calendar_code: "XJSE"
 
+# Insample
 backtest:
     starting_capital: 100000000 # in cents for ZAEQ
     start_date: "2002-01-07"
@@ -14,7 +12,21 @@ bundles:
     bundle_name: "ZAEQ"
     calendar_code: "XJSE"
 
+#OOS1
+# bundles:
+    # bundle_name: "ZAEQ21"
+    # calendar_code: "XJSE"
 # backtest:
     # starting_capital: 100000000 # in cents for ZAEQ
-    # start_date: "2019-02-04"
-    # end_date: "2021-11-26"
+    # start_date: "2018-01-04"
+    # end_date: "2021-12-26"
+
+#OOS2
+# bundles:
+    # bundle_name: "ZAEQ23"
+    # calendar_code: "XJSE"
+
+# backtest:
+    # starting_capital: 100000000 # in cents for ZAEQ
+    # start_date: "2022-01-04"
+    # end_date: "2023-12-28"

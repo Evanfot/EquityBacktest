@@ -56,7 +56,7 @@ from zipline.utils.calendar_utils import get_calendar
 import pyfolio as pf
 
 # %% Read config
-with open("config.yml", "r") as file:
+with open("../config.yml", "r") as file:
     settings = yaml.safe_load(file)
 
 EOD_BUNDLE_NAME = settings["bundles"]["bundle_name"]
@@ -110,21 +110,16 @@ def make_pipeline():
 
 
 def initialize(context):
-    # Set up a benchmark to measure against
-    #    context.set_benchmark(symbol("STX40"))
     attach_pipeline(make_pipeline(), "my_pipeline")
     # Rebalance each day.  In daily mode, this is equivalent to putting
     # `rebalance` in our handle_data, but in minute mode, it's equivalent to
     # running at the start of the day each day.
-    # TODO: Change to daily
     schedule_function(
         rebalance, date_rule=date_rules.every_day(), time_rule=time_rules.market_close()
     )
 
     # Explicitly set the commission/slippage to the "old" value until we can
     # rebuild example data.
-    # github.com/quantopian/zipline/blob/master/tests/resources/
-    # rebuild_example_data#L105
     context.set_commission(commission.PerShare(cost=0.0075, min_trade_cost=1))
     context.set_slippage(slippage.VolumeShareSlippage())
 
@@ -139,7 +134,6 @@ def calculate_risk(Close):
     five_year_returns = Close.pct_change()[1:].fillna(0)
     num_factor_exposures = 4
     pca = fit_pca(five_year_returns, num_factor_exposures, "full")
-    # pca.components_
     risk_model = {}
 
     risk_model["factor_betas"] = factor_betas(
@@ -189,9 +183,6 @@ def rebalance(context, data):
     if len(pipeline_output("my_pipeline")) != 0:
         context.output = pipeline_output("my_pipeline")
         pipeline_data = context.output.copy(deep=True)
-        # pipeline_data["alpha"] = pipeline_data[pipeline_data["universe"]][
-        # ["MOM", "MR"]
-        # ].mean(axis=1)
         pipeline_data.loc[pipeline_data["universe"], ("alpha")] = (
             pipeline_data["momentum_sector_neutral_1y"]
             .subtract(pipeline_data["momentum_sector_neutral_1m"])
@@ -217,10 +208,6 @@ def rebalance(context, data):
             if data.can_trade(asset):
                 if asset not in context.get_open_orders():
                     order_target(asset, 0)
-                # test = order_target_percent(asset, 0.0)
-
-                # if asset.symbol == "MVS":
-                #     print(test)
     else:
         print("No pipeline skipping day")
 
@@ -267,7 +254,7 @@ result = run_algorithm(
     custom_loader=pricing_loader,
 )
 
-result.to_pickle(create_output_path("backtest.pkl"))
+result.to_pickle(create_output_path("backtest_1.pkl"))
 print("Ready to analyze result")
 
 
@@ -284,7 +271,7 @@ def create_benchmark(fname):
     return bench_series
 
 
-bench_series = create_benchmark("STX40")
+bench_series = create_benchmark("../STX40")
 
 
 # %%
@@ -293,29 +280,11 @@ bench_series = bench_series[
     bench_series.index.isin(result.index.tz_localize(None))
 ].tz_localize("UTC")
 
-# %%
-
-
 returns, positions, transactions = pf.utils.extract_rets_pos_txn_from_zipline(result)
 
 returns_table = pf.create_simple_tear_sheet(returns, benchmark_rets=bench_series)
 returns_table.to_csv(create_output_path("returns_table.csv"))
 plt.savefig(create_output_path("returns_tear_sheet.png"), bbox_inches="tight")
 plt.close()
+
 # %%
-# pf.create_interesting_times_tear_sheet(returns, bench_series)
-
-# plt.savefig(
-# "".join([path, run_time, "_tear_sheet_interesting_times.png"]), bbox_inches="tight"
-# )
-# plt.close()
-# pf.create_position_tear_sheet(
-# returns, positions, sector_mappings=None, transactions=transactions
-# )
-
-# plt.savefig("".join([path, run_time, "_tear_sheet_position.png"]), bbox_inches="tight")
-# plt.close()
-# pf.create_txn_tear_sheet(returns, positions, transactions)
-
-# plt.savefig("".join([path, run_time, "_tear_sheet_txn.png"]), bbox_inches="tight")
-# plt.close()
