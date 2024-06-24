@@ -33,7 +33,7 @@ from optimisers.strict_factor_optimiser import OptimalHoldingsStrictFactor
 from optimisers.markowitz_optimiser import OptimalHoldings
 from alpha_models.alphas import (
     momentum_sector_neutral,
-    mean_reversion_5day_sector_neutral,
+    mean_reversion_sector_neutral,
 )
 from risk_models.statistical_risk_model import (
     fit_pca,
@@ -58,13 +58,13 @@ import pyfolio as pf
 # %% Read config
 with open("../config.yml", "r") as file:
     settings = yaml.safe_load(file)
-
-EOD_BUNDLE_NAME = settings["bundles"]["bundle_name"]
-path = settings["paths"]["output_path"]
-calendar_code = settings["bundles"]["calendar_code"]
-start = pd.Timestamp(settings["backtest"]["start_date"])
-end = pd.Timestamp(settings["backtest"]["end_date"])
-starting_cap = settings["backtest"]["starting_capital"]
+config_heading = "insample"
+EOD_BUNDLE_NAME = settings[config_heading]["bundles"]["bundle_name"]
+path = settings[config_heading]["paths"]["output_path"]
+calendar_code = settings[config_heading]["bundles"]["calendar_code"]
+start = pd.Timestamp(settings[config_heading]["backtest"]["start_date"])
+end = pd.Timestamp(settings[config_heading]["backtest"]["end_date"])
+starting_cap = settings[config_heading]["backtest"]["starting_capital"]
 run_time = dt.datetime.now().strftime("%Y%m%d_%H%M")
 
 
@@ -94,7 +94,7 @@ def make_pipeline():
     universe = AverageDollarVolume(window_length=120).top(100)
     momentum_sector_neutral_1yr = momentum_sector_neutral(251, universe, sector)
     momentum_sector_neutral_1m = momentum_sector_neutral(19, universe, sector)
-    mean_reversion_5_day_sector_neutral = mean_reversion_5day_sector_neutral(
+    mean_reversion_5_day_sector_neutral = mean_reversion_sector_neutral(
         5, universe, sector
     )
 
@@ -190,7 +190,7 @@ def rebalance(context, data):
         )
         pipeline_data = pipeline_data[pipeline_data["universe"]]
         all_assets = pipeline_data.index
-        hist = data.history(all_assets, "close", 1250, "1d").dropna(how="all")
+        hist = data.history(all_assets, "close", 720, "1d").dropna(how="all")
         risk_model = calculate_risk(hist)
         optimal_weights = calculate_optimal(pipeline_data[["alpha"]], risk_model)
         record(universe_size=len(all_assets))
@@ -286,5 +286,3 @@ returns_table = pf.create_simple_tear_sheet(returns, benchmark_rets=bench_series
 returns_table.to_csv(create_output_path("returns_table.csv"))
 plt.savefig(create_output_path("returns_tear_sheet.png"), bbox_inches="tight")
 plt.close()
-
-# %%

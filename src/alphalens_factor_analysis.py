@@ -1,3 +1,4 @@
+# %%
 #!/Users/evanfotopoulos/Projects/EquityBacktest/.venv/bin/python
 
 # %%
@@ -21,7 +22,6 @@ from data.pricing import (
     build_pipeline_engine,
     get_data_portal,
     get_pricing,
-    get_symbol_from_ticker,
 )
 from zipline.pipeline.domain import ZA_EQUITIES
 from data.sector import dict_asset_sector, dict_sector_int, create_sector
@@ -29,13 +29,14 @@ from data.sector import dict_asset_sector, dict_sector_int, create_sector
 # alphas
 from alpha_models.alphas import (
     momentum_sector_neutral,
-    mean_reversion_5day_sector_neutral,
-    mean_reversion_5day_sector_neutral_smoothed,
+    mean_reversion_sector_neutral,
+    mean_reversion_sector_neutral_smoothed,
+    annualised_volatility_sector_neutral,
 )
 
 # analysis
 import alphalens as al
-from analytics.stats import predict_portfolio_risk, transfer_coefficient, sharpe_ratio
+from analytics.stats import sharpe_ratio
 
 import yaml
 
@@ -43,11 +44,11 @@ import yaml
 
 with open("../config.yml", "r") as file:
     settings = yaml.safe_load(file)
-
-EOD_BUNDLE_NAME = settings["bundles"]["bundle_name"]
-factor_start_date = pd.Timestamp(settings["backtest"]["start_date"])
-factor_end_date = pd.Timestamp(settings["backtest"]["end_date"])
-calendar_code = settings["bundles"]["calendar_code"]
+config_heading = "insample"
+EOD_BUNDLE_NAME = settings[config_heading]["bundles"]["bundle_name"]
+factor_start_date = pd.Timestamp(settings[config_heading]["backtest"]["start_date"])
+factor_end_date = pd.Timestamp(settings[config_heading]["backtest"]["end_date"])
+calendar_code = settings[config_heading]["bundles"]["calendar_code"]
 domain = ZA_EQUITIES
 ingest_func = ingest_function(EOD_BUNDLE_NAME)
 
@@ -61,7 +62,6 @@ trading_calendar = get_calendar(calendar_code)
 
 data_portal = get_data_portal(bundle_data, trading_calendar)
 
-# test = get_symbol_from_ticker(bundle_data, "AHV", pd.Timestamp("2018-01-22"))
 # Create sector for bundle
 sector_tickers = bundle_data.asset_finder.retrieve_all(bundle_data.asset_finder.sids)
 sector, ticker_sector = create_sector(
@@ -71,29 +71,34 @@ sector, ticker_sector = create_sector(
 # %%
 
 # ## Create alpha factors
-
 pipeline = Pipeline(screen=universe)
 pipeline.add(
     momentum_sector_neutral(251, universe, sector), "momentum_sector_neutral_1YR"
 )
-
 pipeline.add(
-    momentum_sector_neutral(19, universe, sector), "momentum_sector_neutral_1MO"
+    mean_reversion_sector_neutral(19, universe, sector),
+    "Mean_Reversion_1Mo_Sector_Neutral",
 )
+pipeline.add(annualised_volatility_sector_neutral(252, universe, sector), "Volatility")
 pipeline.add(
-    mean_reversion_5day_sector_neutral(5, universe, sector),
+    mean_reversion_sector_neutral(5, universe, sector),
     "Mean_Reversion_5Day_Sector_Neutral",
 )
 pipeline.add(
-    mean_reversion_5day_sector_neutral_smoothed(5, universe, sector),
+    mean_reversion_sector_neutral_smoothed(5, universe, sector),
     "Mean_Reversion_5Day_Sector_Neutral_Smoothed",
 )
 all_factors = engine.run_pipeline(pipeline, factor_start_date, factor_end_date)
 all_factors["alpha"] = (
     (all_factors["momentum_sector_neutral_1YR"])
-    .subtract(all_factors["momentum_sector_neutral_1MO"])
+    .add(all_factors["Mean_Reversion_1Mo_Sector_Neutral"])
     .add(all_factors["Mean_Reversion_5Day_Sector_Neutral"] * 0.5)
 )
+
+all_factors.index = all_factors.index.set_levels(
+    [pd.to_datetime(all_factors.index.levels[0]), all_factors.index.levels[1]]
+)
+
 # %%
 
 assets = all_factors.index.levels[1].values.tolist()
@@ -103,6 +108,7 @@ pricing = get_pricing(
 
 # %%
 sector_names = dict((v, k) for k, v in dict_sector_int.items())
+
 clean_factor_data = {
     factor: al.utils.get_clean_factor_and_forward_returns(
         factor=factor_data,
@@ -159,3 +165,5 @@ plt.show()
 daily_annualization_factor = np.sqrt(252)
 sharpe = sharpe_ratio(ls_factor_returns, daily_annualization_factor).round(2)
 print("Sharpe Ratio: {}".format(sharpe))
+
+# %%
