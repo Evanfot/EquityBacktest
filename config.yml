@@ -1,32 +1,31 @@
 paths:
     output_path: "examples/"
 
+insample:
+    backtest:
+        starting_capital: 100000000 # in cents for ZAEQ
+        start_date: "2002-01-07"
+        end_date: "2017-12-29"
 
-# Insample
-backtest:
-    starting_capital: 100000000 # in cents for ZAEQ
-    start_date: "2002-01-07"
-    end_date: "2017-12-29"
+    bundles:
+        bundle_name: "ZAEQ"
+        calendar_code: "XJSE"
 
-bundles:
-    bundle_name: "ZAEQ"
-    calendar_code: "XJSE"
+outsample1:
+    bundles:
+        bundle_name: "ZAEQ22"
+        calendar_code: "XJSE"
+    backtest:
+        starting_capital: 100000000 # in cents for ZAEQ
+        start_date: "2018-01-04"
+        end_date: "2022-12-15"
 
-#OOS1
-# bundles:
-    # bundle_name: "ZAEQ21"
-    # calendar_code: "XJSE"
-# backtest:
-    # starting_capital: 100000000 # in cents for ZAEQ
-    # start_date: "2018-01-04"
-    # end_date: "2021-12-26"
+outsample2:
+    bundles:
+        bundle_name: "ZAEQ23"
+        calendar_code: "XJSE"
 
-#OOS2
-# bundles:
-    # bundle_name: "ZAEQ23"
-    # calendar_code: "XJSE"
-
-# backtest:
-    # starting_capital: 100000000 # in cents for ZAEQ
-    # start_date: "2022-01-04"
-    # end_date: "2023-12-28"
+    backtest:
+        starting_capital: 100000000 # in cents for ZAEQ
+        start_date: "2022-01-04"
+        end_date: "2023-12-28"
